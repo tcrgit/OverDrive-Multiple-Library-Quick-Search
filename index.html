@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script>
+
+//NOTES
+
+//OverDrive URL composition given a good set of filters
+
+//https://www.overdrive.com/search?q=
+//truly%20madly%20guilt
+//&f-consortium=all%7CAll%20saved%20libraries
+//&autoLibrary=f
+//&autoRegion=t
+//&showAvailable=False
+//&f-formatClassification=eBook
+
+</script>
+<html>
+  <head>
+    <title>OverDrive Multiple Library Quick Search</title>
+  </head>
+<body id='body'>
+  <h4>OverDrive Multiple Library Quick Search</h4>
+  <div id="formDiv" style="margin-bottom: 20px;">
+    <form onSubmit="return submitq();">
+      Author, Title, or Keyword: <br><br>
+      <input id="q" type="text" style="width:80%" /><br><br>
+      Media Type: <br><br>
+      <input id="eBookOnly" name="radio1" type="radio" checked/> Show only eBooks<br><br>
+      <input id="AudiobookOnly" name="radio1" type="radio"/> Show only Audiobooks<br><br>
+      <input id="either" name="radio1" type="radio"/> Show all results<br><br>
+<!--
+      <input id="showAvailable" type="checkbox" /> Show only titles available for checkout <br><br>
+--> 
+      <input id="debug" type="checkbox" /> Debug query and do not open an OverDrive tab/window<br><br>
+      <input type="submit" class="submit" value="SUBMIT" />
+    </form>
+  </div>
+  <div id="notes">
+    <h4>Notes</h4>
+    <p>
+      This page submits an OverDrive search and opens the results in a new tab (or a new window, depending on your browser settings). It is designed to be a timesaver for anyone with multiple library cards and multiple libraries to search.
+    </p>
+    <p>If you are already logged in to OverDrive and have saved libraries, it will search by keyword in all of your saved libraries. You have the option of showing only eBooks or Audiobooks. To cut down on useless results, it will also try to only show books available in the region OverDrive automagically determines your ip to be in.
+    </p>
+    <p>
+      This page's correct operation depends on the stability of OverDrive's URL schema, changes to which are out of the control of the author. Consequently, this search page may break at any time.
+    </p>
+    <p>
+      Tested: 9 March 2017
+    </p>
+  </div>
+  <div id="resultDiv">
+    <p>
+      <span id="result" style="color:blue"></span>
+    </p>
+  </div>
+  <script>
+    function submitq() {
+        var URLbase = 'https://www.overdrive.com/search?q=';
+        var savedLibs = '&f-consortium=all%7CAll%20saved%20libraries&autoLibrary=f&autoRegion=t';
+
+        var response = document.getElementById('q').value;
+        var q = encodeURIComponent(response);
+        var showavailable = '';        
+        var bookFormat = '';
+        if (document.getElementById("eBookOnly").checked) {bookFormat = '&f-formatClassification=eBook';}
+        if (document.getElementById("AudiobookOnly").checked) {bookFormat = '&f-formatClassification=Audiobook';}
+        
+        //showing available titles isn't working for now with multiple libraries
+        //if (document.getElementById("showAvailable").checked) {showavailable = '&showAvailable=True';}
+
+        var overdriveURL = URLbase + q + savedLibs + showavailable + bookFormat
+        var infostring = "Query: "+ q + "   Format: " + bookFormat;
+        // + "   Only show available titles: " + showavailable;
+        console.log(infostring); 
+        console.log(overdriveURL);
+        
+        //update results in any case
+        document.getElementById("result").innerHTML = infostring;
+        if (document.getElementById("debug").checked) { return false;}
+        
+        //open the overdrive URL in a new tab or window
+        window.open(overdriveURL); 
+        return false;
+    }
+  </script>
+</body>
+</html>
