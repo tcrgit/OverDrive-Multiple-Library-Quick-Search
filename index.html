@@ -11,8 +11,9 @@
 //&f-consortium=all%7CAll%20saved%20libraries
 //&autoLibrary=f
 //&autoRegion=t
-//&showAvailable=False
 //&f-formatClassification=eBook
+//&showAvailable=False
+//&showAvailable=True will error
 
 </script>
 <html>
@@ -29,11 +30,9 @@
       <input id="eBookOnly" name="radio1" type="radio" checked/> Show only eBooks<br><br>
       <input id="AudiobookOnly" name="radio1" type="radio"/> Show only Audiobooks<br><br>
       <input id="either" name="radio1" type="radio"/> Show all results<br><br>
-<!--
-      <input id="showAvailable" type="checkbox" /> Show only titles available for checkout <br><br>
---> 
-      <input id="debug" type="checkbox" /> Debug query and do not open an OverDrive tab/window<br><br>
-      <input type="submit" class="submit" value="SUBMIT" />
+      <input id="showAvailable" type="checkbox" /> Show only titles available for checkout (NOT WORKING)<br><br>
+      <!-- <input id="debug" type="checkbox" /> Debug query and do not open an OverDrive tab/window<br><br> -->
+      <input type="submit" class="submit" value="SEARCH" />
     </form>
   </div>
   <div id="notes">
@@ -47,7 +46,7 @@
       This page's correct operation depends on the stability of OverDrive's URL schema, changes to which are out of the control of the author. Consequently, this search page may break at any time.
     </p>
     <p>
-      Tested: 9 March 2017
+      Tested: 20 March 2017
     </p>
   </div>
   <div id="resultDiv">
@@ -57,32 +56,34 @@
   </div>
   <script>
     function submitq() {
+      var response = document.getElementById('q').value;
+      if (response.length < 1) {
+        return false;
+      } else {
+        var showavailable = '', bookFormat = '', debug=false;
         var URLbase = 'https://www.overdrive.com/search?q=';
         var savedLibs = '&f-consortium=all%7CAll%20saved%20libraries&autoLibrary=f&autoRegion=t';
-
-        var response = document.getElementById('q').value;
         var q = encodeURIComponent(response);
-        var showavailable = '';        
-        var bookFormat = '';
+
         if (document.getElementById("eBookOnly").checked) {bookFormat = '&f-formatClassification=eBook';}
         if (document.getElementById("AudiobookOnly").checked) {bookFormat = '&f-formatClassification=Audiobook';}
-        
-        //showing available titles isn't working for now with multiple libraries
-        //if (document.getElementById("showAvailable").checked) {showavailable = '&showAvailable=True';}
+
+        //showing available titles isn't working for now with multiple libraries (should be=True but errors)
+        if (document.getElementById("showAvailable").checked) {showavailable = '&showAvailable=false';}
 
         var overdriveURL = URLbase + q + savedLibs + showavailable + bookFormat
-        var infostring = "Query: "+ q + "   Format: " + bookFormat;
-        // + "   Only show available titles: " + showavailable;
-        console.log(infostring); 
+        var infostring = "Query: "+ q + "   Format: " + bookFormats + "   Only show available titles: " + showavailable;
+        console.log(infostring);
         console.log(overdriveURL);
-        
-        //update results in any case
-        document.getElementById("result").innerHTML = infostring;
-        if (document.getElementById("debug").checked) { return false;}
-        
+
+        //update results if debug set
+        // debug = document.getElementById("debug").checked;
+        if (debug) { document.getElementById("result").innerHTML = infostring; return false;}
+
         //open the overdrive URL in a new tab or window
-        window.open(overdriveURL); 
+        window.open(overdriveURL);
         return false;
+      }
     }
   </script>
 </body>
