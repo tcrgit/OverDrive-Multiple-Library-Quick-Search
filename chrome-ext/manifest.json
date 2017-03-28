@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+
+  "name": "OverDrive Multiple Library Quick Search",
+  "description": "Quickly search saved OverDrive libraries",
+  "version": "1.0",
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html",
+    "default_title": "Search OverDrive"
+  },
+  "permissions": [
+    "https://*.overdrive.com/*"
+  ]
+}
