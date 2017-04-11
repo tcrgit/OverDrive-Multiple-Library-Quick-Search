@@ -7,23 +7,26 @@
       body {
         min-width: 250px;
         max-width: 400px;
+        font-family: "LinetoBrown", "Helvetica Neue", Helvetica, Arial, Verdana, sans-serif;
+        font-size: 90%;
       }
+      input[type="submit"] {font-weight: bold;}
+      input.submitSearch:hover {background-color: #73CEE1; color: white; height: 100%; }
+      .qInput {width:95%; font-size: 125%;}
     </style>
 
   </head>
   <body>
-    <h4>OverDrive Multiple Library Quick Search</h4>
+    <h3>Multiple Library Quick Search</h3>
     <div id="formDiv" style="margin-bottom: 20px;">
       <form>
-        Author, Title, or Keywords: <br><br>
-        <input id="q" type="text" style="width:80%; font-size: 125%;
-" /><br><br>
-        Media Type: <br><br>
-        <input id="eBookOnly" name="radio1" type="radio" checked/> Show only eBooks<br><br>
-        <input id="AudiobookOnly" name="radio1" type="radio"/> Show only Audiobooks<br><br>
-        <input id="either" name="radio1" type="radio"/> Show all results<br><br>
-        <input id="showAvailable" type="checkbox" /> Show only titles available for checkout (Not Working)<br><br>
-        <input id="submitSearch" type="submit" class="submit" value="SEARCH" />
+        <p>Author, Title, or Keywords: </p>
+        <p><input id="q" type="text" class="qInput" /></p>
+        <p>Media Type: </p>
+        <p><input id="eBookOnly" name="radio1" type="radio" checked/> Show only eBooks</p>
+        <p><input id="AudiobookOnly" name="radio1" type="radio"/> Show only Audiobooks</p>
+        <p><input id="either" name="radio1" type="radio"/> Show all results</p>
+        <p><input id="submitSearch" type="submit" class="submitSearch" value="SEARCH SAVED LIBRARIES" /></p>
       </form>
     </div>
     <div id="resultDiv">

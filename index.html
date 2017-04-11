@@ -14,14 +14,15 @@
 //&f-formatClassification=eBook
 //&showAvailable=False
 //&showAvailable=True will error
+//&showOnlyAvailable=True works on library.overdrive.com, but not overdrive.com
 
 </script>
 <html>
   <head>
-    <title>OverDrive Multiple Library Quick Search</title>
+    <title>Multiple Library Quick Search</title>
   </head>
 <body id='body'>
-  <h4>OverDrive Multiple Library Quick Search</h4>
+  <h3>Multiple Library Quick Search</h3>
   <div id="formDiv" style="margin-bottom: 20px;">
     <form onSubmit="return submitq();">
       Author, Title, or Keyword: <br><br>
@@ -46,7 +47,7 @@
       This tool's correct operation depends on the stability of OverDrive's URL schema, changes to which are out of the control of the author. Consequently, this search page may break at any time.
     </p>
     <p>
-      Tested: 20 March 2017
+      Tested: 3 April 2017
     </p>
   </div>
   <div id="resultDiv">
@@ -71,7 +72,7 @@
         //showing available titles isn't working for now with multiple libraries (should be=True but errors)
         if (document.getElementById("showAvailable").checked) {showavailable = '&showAvailable=false';}
 
-        var overdriveURL = URLbase + q + savedLibs + showavailable + bookFormat
+        var overdriveURL = URLbase + q + savedLibs + showavailable + bookFormat;
         var infostring = "Query: "+ q + "   Format: " + bookFormats + "   Only show available titles: " + showavailable;
         console.log(infostring);
         console.log(overdriveURL);
