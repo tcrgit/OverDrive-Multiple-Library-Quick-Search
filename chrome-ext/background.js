@@ -19,6 +19,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         chrome.tabs.onUpdated.addListener(passWhenLoaded);
       });
   }
+  //message from content script message to open options page
+  if (message.type == '_openOptionsPage') {
+    chrome.runtime.openOptionsPage();
+  }
 });
 
 function passWhenLoaded(tabid, info, tab) {

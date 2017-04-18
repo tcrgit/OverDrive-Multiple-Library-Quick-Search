@@ -64,9 +64,18 @@ $(document).ready(function() {
 	//try to retrieve library list from chrome.storage;
 	chrome.storage.sync.get("libraries", function(obj) {
 		libraries = obj["libraries"];
-		// if none, initialize a library -- maybe a var and try to init from following?
-		if (!libraries) {
+		//libraries = []; //for debugging
+		if (!libraries || libraries.length == 0) {
 			console.log("no libraries loaded");
+			//add text suggesting they open the options page
+			$('#resultsPane').append("<div id='noLibraries'>No OverDrive libraries found. Please go to the <span id='optPage' style='font-weight:bold'>options page</span> to setup some OverDrive libraries to search.</div>");
+			$(document).on('click', '#optPage', function() {
+				console.log('optPage clicked');
+				chrome.runtime.sendMessage({
+					type: "_openOptionsPage",
+					response: "no libraries loaded"
+				});
+			});
 			//libraries = [{ "libraryShortName": "Arapahoe", "libraryURL": "Arapahoe.overdrive.com", "libraryFullName": "Arapahoe Library District" }];
 			//chrome.storage.sync.set({"libraries": libraries});
 		}
