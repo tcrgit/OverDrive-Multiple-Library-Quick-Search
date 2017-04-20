@@ -1,11 +1,14 @@
 // Injects Multiple Library Search results into OverDrive search and media pages
 console.log("overdriveMLS_load");
 
-var libraries = [], fullsize = 300;
+var port = chrome.runtime.connect();
+port.postMessage({console: 'test post from injected script'});
+
+var libraries = [], fullsize = 300, noLibrariesDone = false;
 var noLibrariesMsg = "<div id='noLibraries'>No OverDrive libraries found. Please go to the <span id='optPage' style='font-weight:bold'>options page</span> to setup some OverDrive libraries to search.</div>";
 
 $(document).ready(function() {
-	console.log("document ready");
+	console.log("overdriveMLS document ready");
 
 	//get overdrive datalayer
 	var varList = retrieveWindowVariables(["dataLayer"]);  //js var inaccessible due to sandboxing of extension, trick
@@ -29,9 +32,9 @@ $(document).ready(function() {
 	$(document).on('click', '#resultsPane', function(e) {
 		console.log("target of click on results: ",e);
 		if ($(e.target).is('a, a *')) return;
-		console.log("resultsPane.outerHeight: " + $('#resultsPane').outerHeight(), "fullsize: " + fullsize);
+		//console.log("resultsPane.outerHeight: " + $('#resultsPane').outerHeight(), "fullsize: " + fullsize);
 		newResultsHeight = ($('#resultsPane').height() < 40) ? fullsize : shrunk;
-		console.log("newResultsPane.height: "+ newResultsHeight);
+		//console.log("newResultsPane.height: "+ newResultsHeight);
 		$('#resultsPane').animate({
 	    height: newResultsHeight
 		});
@@ -47,7 +50,7 @@ $(document).ready(function() {
 		//get shortened title and embed in results
 		var bookTitle = $('div.title-result-row__details:first a').text();
 		//inject title into #searchBookTitle
-		$('#searchBookTitle').html('for the first book on the left <br><i>'+bookTitle+'</i>');
+		$('#searchBookTitle').html('for the first book at the top left <br><i>'+bookTitle+'</i>');
 
 		//find reserveid embedded in img filename -- not sure how reliable this is
 		var firstItemImg = $('div.title-result-row:first img');
@@ -71,7 +74,7 @@ $(document).ready(function() {
 		if (!libraries || libraries.length == 0) {
 			console.log("no libraries loaded");
 			//add msg suggesting they open the options page
-			$('#resultsPane').append(noLibrariesMsg);
+			$('#resultsPane').append(noLibrariesMsg); noLibrariesDone = true;
 			$(document).on('click', '#optPage', function() {
 				console.log('optPage clicked');
 				chrome.runtime.sendMessage({
@@ -131,14 +134,14 @@ function findBooks() {
 						//console.log(availString);
 						$('#MLSresults').append(availString);
 						fullsize = $('#resultsPane').outerHeight();
-						console.log("fullsize: "+fullsize);
+						//console.log("fullsize: "+fullsize);
 					}
 				}
 		  });
 	  }
 	} //end libraries array for loop
-	//if no valid libraries, display noLibrariesMsg
-	if (!libsDone) {
+	//if no valid libraries, display noLibrariesMsg if not displayed already
+	if (!libsDone && !noLibrariesDone) {
 		$('#resultsPane').append(noLibrariesMsg);
 		$(document).on('click', '#optPage', function() {
 			console.log('optPage clicked');
@@ -205,10 +208,12 @@ function globalMatches(string, regex) {
 }
 
 //listener to pass messages from options to findSavedLibraries and back
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+port.onMessage.addListener(message => {
 	console.log('odmls_listener');
+	port.postMessage({console: 'inside listener: test post'});
 	if (message.type == '_cs_findSavedLibraries') {
-		//console.log('cs_findSavedLibs');
+		port.postMessage({console: 'inside listener: cs_findSavedLibs received test post'});
+		console.log('cs_findSavedLibs received');
 		//findlibraries
 		$(document).ready(function() {
 			//get overdrive datalayer
@@ -224,7 +229,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 					if (firstLibraryName == "in your library") {
 						status = "No saved libraries";
 					} else {
-						status="Success";
+						status = "Success";
 						//collect list of libraries
 						//if more than 1 library h3 tag will read Other saved libraries
 						if ( $('div.acquirebar-btns h3').text().indexOf("Other saved libraries") > -1) {
@@ -257,7 +262,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 						status: status,
 						response: {newLibraries}
 					});
-				},3000); //wait two secs before trying to get names & urls and send it back
+				},3000); //wait before trying to get names & urls and send it back
 			} else {
 				chrome.runtime.sendMessage({
 					type: "_foundSavedLibraries",

@@ -7,7 +7,7 @@ If you are already logged in to OverDrive and have saved libraries, it will sear
 
 This tool's correct operation depends on the stability of OverDrive's URL schema, changes to which are out of the control of the author. Consequently, this search page may break at any time.
 
-Tested: 10 April 2017
+Tested: 20 April 2017
 
 ## Browser extension details
 
