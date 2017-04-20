@@ -17,92 +17,107 @@ $(document).ready(function() {
   });
 
   $('#btnSetup').click(function() {
+    //$('#btnSetup').text('working');
     findLibraries();
   });
 
-  $('#btnClearAndFind').click(function() {
-    //Warn of serious nature and get confirmation to proceed
-    r = window.confirm("Warning! This will delete all current libraries and replace them with those found in another tab.\n\nYou must be logged in to OverDrive.com with saved libraries before executing this command.");
-    if (r==true) findLibraries();
+  $('#btnClearAndSetup').click(function() {
+    //Warn of serious nature and get confirmation to proceed - s/b modal, confirm won't work
+    // r = window.confirm("Warning! This will delete all current libraries and replace them with those found in another tab.\n\nYou must be logged in to OverDrive.com with saved libraries before executing this command.");
+    // if (r == true)
+    findLibraries();
   });
 });
 
 function findLibraries() {
   //clear former libraries
   chrome.storage.sync.clear();
+  console.log("requesting saved libraries")
   //request saved libraries
-  chrome.runtime.sendMessage({type: "_findSavedLibraries"});
   startListener = true;
+  $('#spinnerP').text('Downloading saved libraries ... please wait');
+  $('#spinner').fadeIn(1000);
+  chrome.runtime.sendMessage({type: "_findSavedLibraries"});
 }
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (message.type == "_foundSavedLibraries" && startListener ) {
+    $('#spinnerP').text('Found saved libraries ... working');
+    console.log("from overdrive_mls _foundSavedLibraries",message);
     startListener = false; //prevents bug of multiple messages being received
     switch (message.status) {
       case "Success":
         libraries = message.response.newLibraries;
-        //TODO: commented out close tab for debugging
-        chrome.tabs.remove(sender.tab.id);
         newLibraryIndex = 0;
         if (libraries.length) {
           var library = libraries[newLibraryIndex];
-          console.log(library);
+          console.log("first library found: ",library);
           if (library.libraryURL.length > 0 &&
             library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
             library.libraryURL.indexOf(".overdrive.com") == -1 )
           {
-            chrome.tabs.create({url: "http://"+library.libraryURL}, function(tab){
-              chrome.tabs.onUpdated.addListener(runWhenLoaded);
+            chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
+              urls: ['*://*.overdrive.com/*'], //assumes redirections terminate in overdrive.com
+              types: ['sub_frame']
             });
+            //load tab in an iframe, using bg.js webrequest listener to block x-frame-options header
+            $('#iframeOpt').attr('src', "http://"+library.libraryURL);
           }
         }
         break;
       case "Not logged in":
-        chrome.tabs.remove(sender.tab.id); //close to avoid multiple alerts
-        window.location.reload();
+        $('#spinnerP').text(message.status);
         alert("Not logged into OverDrive. Please log into your OverDrive account to find library information from your saved libraries.");
+        window.location.reload();
         break;
       case "No saved libraries":
-        chrome.tabs.remove(sender.tab.id); //close to avoid multiple alerts
-        window.location.reload();
+        $('#spinnerP').text(message.status);
         alert("This OverDrive account has no saved libraries. Please save a list of local libraries to find library information for your local libraries (recommended), or enter them manually below.");
+        window.location.reload();
         break;
     }
   }
 });
 
-function runWhenLoaded(tabid, info, tab) {
-  if (info.status == "complete") {
-    //console.log('complete');
-    chrome.tabs.query({currentWindow: true, active: true}, function(tabs){
-      //console.log("url: " + tabs[0].url, tabs[0]);
-      chrome.tabs.onUpdated.removeListener(runWhenLoaded);
-      chrome.tabs.remove(tabs[0].id);
-      if (tabs[0].url) {
-        var library = libraries[newLibraryIndex];
-        //console.log(libraries[newLibraryIndex].libraryURL);
-        libraries[newLibraryIndex].libraryURL = tabs[0].url.replace(/https?:\/\//i,'').replace(/overdrive.com.*/, 'overdrive.com');
-        //console.log(libraries, libraries[newLibraryIndex].libraryURL);
-      }
-      newLibraryIndex++;
-      //if there are still more libraries... do it again
-      if (libraries.length > newLibraryIndex ) {
-        var library = libraries[newLibraryIndex];
-        //console.log(library);
-        if (library.libraryURL.length > 0 &&
-          library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
-          library.libraryURL.indexOf(".overdrive.com") == -1 )
-        {
-          chrome.tabs.create({url: "http://"+library.libraryURL}, function(tab){
-            chrome.tabs.onUpdated.addListener(runWhenLoaded);
-          });
-        }
-      } else {
-        //done, need to sync or at least clear menu
-        $('#menu').html('');
-        chrome.storage.sync.set({"libraries": libraries}, function() { onNoLibraries = 4; loadLibraries(); });
-      }
-    });
+function runWhenLoaded(info) {
+  console.log('iframeSrcChanged: changed'); //iframeSrcChanged
+  //add listener to get URL when redirection finished
+  console.log("onCompleted, url: ", info.url);
+  chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
+  if (info.url) {
+    var library = libraries[newLibraryIndex];
+    //console.log(libraries[newLibraryIndex].libraryURL);
+    libraries[newLibraryIndex].libraryURL = info.url.replace(/https?:\/\//i,'').replace(/overdrive.com.*/, 'overdrive.com');
+    console.log("changed url to "+libraries[newLibraryIndex].libraryURL, libraries);
+    $('#spinnerP').text('Located '+library.libraryFullName+ ' ... working');
+  }
+  //TODO: this needs to be a loop or something if a well former Overdrive URL in the middle
+  newLibraryIndex++; console.log(libraries.length + " libs > index " + newLibraryIndex);
+  //while there are still more libraries... do it again
+  if (libraries.length > newLibraryIndex ) {
+    var library = libraries[newLibraryIndex];
+    console.log("next library: "+library.libraryShortName,library);
+    if (library.libraryURL.length > 0 &&
+      library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
+      library.libraryURL.indexOf(".overdrive.com") == -1 )
+    {
+      chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
+        urls: ['*://*.overdrive.com/*'], //assumes redirections terminate in overdrive.com
+        types: ['sub_frame']
+      });
+      console.log("iframing next library "+library.libraryURL);
+      //load tab in an iframe, using bg.js webrequest listener to block x-frame-options header
+      $('#iframeOpt').attr('src', "http://"+library.libraryURL);
+    } else { console.log("library already overdrive.com, what to do? increment newlibraryIndex?",library.libraryURL); }
+  } else {
+    //done, need to sync or at least clear menu
+    //TODO: remove end spinner
+    $('#spinnerP').text('Setup Complete!');
+    $('#spinnerP').css('color','green');
+    $('#spinner').fadeOut(2000);
+    console.log("done", libraries);
+    $('#menu').html('');
+    chrome.storage.sync.set({"libraries": libraries}, function() { onNoLibraries = 4; loadLibraries(); });
   }
 }
 
@@ -260,7 +275,6 @@ String.prototype.firstWord = function (){
 		return (this.indexOf(' ') !== -1) ? this.substr(0, this.indexOf(' ')) : this;
 };
 
-//sample
 function validateInput() {
   //console.dir(this);
   if ($(this).length == 0) {return;}

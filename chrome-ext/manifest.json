@@ -19,12 +19,15 @@
     "chrome_style": true
   },
   "background": {
-    "page": "background.html"
+    "page": "background.html",
+    "persistent": true
   },
   "permissions": [
     "*://*.overdrive.com/*",
     "storage",
-    "tabs"
+    "tabs",
+    "webRequest",
+    "webRequestBlocking"
   ],
   "content_scripts": [{
     "matches": [
@@ -34,6 +37,7 @@
     "js": [
       "jquery-3.2.0.min.js",
       "overdriveMLS.js"
-    ]
+    ],
+    "all_frames": true
   }]
 }
