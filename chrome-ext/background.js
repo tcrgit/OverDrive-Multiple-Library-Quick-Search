@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(
 );
 
 //listener to pass messages from options to findSavedLibraries and back
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(message, sender) {
   if (message.type == '_findSavedLibraries') {
     var findLibrariesURL = "https://www.overdrive.com/media/789876";
     //create iframe
@@ -58,7 +58,7 @@ chrome.webRequest.onHeadersReceived.addListener(
     return {responseHeaders: headers};
   },
   {
-    urls: ['*://*.overdrive.com/*'], //
+    urls: ['<all_urls>'], //
     types: ['sub_frame']
   },
   ['blocking', 'responseHeaders']

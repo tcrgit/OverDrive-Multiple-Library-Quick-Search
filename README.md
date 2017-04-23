@@ -7,7 +7,7 @@ If you are already logged in to OverDrive and have saved libraries, it will sear
 
 This tool's correct operation depends on the stability of OverDrive's URL schema, changes to which are out of the control of the author. Consequently, this search page may break at any time.
 
-Tested: 20 April 2017
+Tested: 22 April 2017
 
 ## Browser extension details
 
@@ -23,5 +23,6 @@ for an ebook or audiobook to check out.
 ## Roadmap
 
 * Maintain simple webform as it is ideal on mobile browsers or for a panel in Vivaldi
-* Develop browser extensions for Chrome, Opera, Firefox and possibly other browsers such as Safari
-* Consider adding "available to borrow" information if the diversity of OverDrive implementations allows
+* Develop browser extensions for Chrome, Opera and Vivaldi
+* Adapt browser extension for Firefox and another browsers such as Safari
+* Consider adding "available to borrow" information from libraryreserve.com (old design)

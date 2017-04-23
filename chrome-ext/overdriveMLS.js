@@ -42,11 +42,7 @@ $(document).ready(function() {
 
 	//get reserveID for book
 	if (searchPage) {
-		//analyze search results page for first book reserveID
-		//var firstItem = $('div.title-result-row:first'); //console.log(firstItem);
-		//bookisbn might eventually be useful if we have to ajax the media/{isbn} page to find reserveID
-		//bookisbn = $('div.title-result-row:first').data("isbn") //console.log("isbn: "+bookisbn);
-
+		//analyze search results page for first book title and reserveID
 		//get shortened title and embed in results
 		var bookTitle = $('div.title-result-row__details:first a').text();
 		//inject title into #searchBookTitle
@@ -63,7 +59,6 @@ $(document).ready(function() {
 		//analyze media page for book reserveID
 		book = ODdataLayer.content;
 		bookid = book.reserveID; //this is what we need to construct url from
-		//bookid = "cc74f466-085d-4567-91ff-31220263dee9";
 		console.log("(media) reserveID: "+bookid);
 	}
 
@@ -82,8 +77,6 @@ $(document).ready(function() {
 					response: "No libraries loaded"
 				});
 			});
-			//libraries = [{ "libraryShortName": "Arapahoe", "libraryURL": "Arapahoe.overdrive.com", "libraryFullName": "Arapahoe Library District" }];
-			//chrome.storage.sync.set({"libraries": libraries});
 		}
 		console.log("sync.get libraries:", libraries);
 	  findBooks();
@@ -97,6 +90,17 @@ function findBooks() {
 	for (var libraryIndex in libraries) {
 		var library = libraries[libraryIndex];
 		//console.log(library.libraryShortName + ": " + library.libraryURL);
+		//if a libraryreserve.com old design site, skip but leave link
+		if ( library.libraryURL.length > 0 && library.libraryURL.indexOf(".libraryreserve.com") > 0 ) {
+			console.log(library.libraryURL);
+			//poudreriver.libraryreserve.com/BANGSearch.dll?Type=FullText&FullTextField=All&more=1&FullTextCriteria=winter+holiday
+			//poudreriver.libraryreserve.com/BANGSearch.dll?Type=ISBN&more=1&ISBN=9781567925005
+			//https://poudreriver.libraryreserve.com/10/50/en/ContentDetails.htm?id=D26F1A19-55B2-4032-8088-BA3C190256FE
+			//https://poudreriver.libraryreserve.com/10/50/en/ContentDetails.htm?id=cc74f466-085d-4567-91ff-31220263dee9
+			itemURL = "http://" + library.libraryURL + "/ContentDetails.htm?id="+bookid;
+			$('#MLSresults').append("<b><a target='_blank' href='" + itemURL + "'>" + library.libraryShortName + "</a>:</b> unknown (libraryreserve.com)<br>");
+			fullsize = $('#resultsPane').outerHeight();
+		}
 		//skip if URL empty or not .overdrive.com
 		if (
 			library.libraryURL.length > 0
@@ -128,7 +132,7 @@ function findBooks() {
 							if (book.ownedCopies) {
 								availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> " + book.holdsCount + " hold" + (book.holdsCount == 1 ? "" : "s") + " on " + book.ownedCopies + " cop" + (book.ownedCopies == 1 ? "y" : "ies") + "<br>";
 							} else {
-								availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> No copies owned<br>"
+								availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> No copies owned<br>";
 							}
 						}
 						//console.log(availString);

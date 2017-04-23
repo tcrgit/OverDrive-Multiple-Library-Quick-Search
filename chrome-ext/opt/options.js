@@ -1,4 +1,4 @@
-var libraries = [], startListener = true, newLibraryIndex = 0, onNoLibraries = 5; //normal is 5
+var libraries = [], newLibraryIndex = 0, onNoLibraries = 5; //normal is 5
 //chrome.storage.sync.clear(); //TODO: for debugging
 
 $(document).ready(function() {
@@ -22,10 +22,20 @@ $(document).ready(function() {
   });
 
   $('#btnClearAndSetup').click(function() {
-    //Warn of serious nature and get confirmation to proceed - s/b modal, confirm won't work
+    //Warn of serious nature and get confirmation to proceed - TODO s/b modal, confirm won't work
     // r = window.confirm("Warning! This will delete all current libraries and replace them with those found in another tab.\n\nYou must be logged in to OverDrive.com with saved libraries before executing this command.");
     // if (r == true)
     findLibraries();
+  });
+
+  $('#btnCancelSetup').click(function() {
+    newLibraryIndex = 10000;
+    chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
+    $('#spinnerP').text('Cancelling...');
+    $('#spinner').fadeOut(1000);
+    setTimeout(function() {
+      window.location.reload();
+    },1000);
   });
 });
 
@@ -34,35 +44,46 @@ function findLibraries() {
   chrome.storage.sync.clear();
   console.log("requesting saved libraries")
   //request saved libraries
-  startListener = true;
   $('#spinnerP').text('Downloading saved libraries ... please wait');
   $('#spinner').fadeIn(1000);
   chrome.runtime.sendMessage({type: "_findSavedLibraries"});
 }
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-  if (message.type == "_foundSavedLibraries" && startListener ) {
+  if (message.type == "_foundSavedLibraries") {
     $('#spinnerP').text('Found saved libraries ... working');
     console.log("from overdrive_mls _foundSavedLibraries",message);
-    startListener = false; //prevents bug of multiple messages being received
     switch (message.status) {
       case "Success":
         libraries = message.response.newLibraries;
         newLibraryIndex = 0;
-        if (libraries.length) {
+        var foundInvalid = false;
+        //avoid slow loading into iframes if URLs are valid overdrive.com URLs
+        while (libraries.length > newLibraryIndex && !foundInvalid) {
           var library = libraries[newLibraryIndex];
-          console.log("first library found: ",library);
+          //find first library that is invalid and load it into iframe
           if (library.libraryURL.length > 0 &&
             library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
             library.libraryURL.indexOf(".overdrive.com") == -1 )
           {
+            console.log("first invalid libraryURL found: ", library.libraryURL);
+            //runWhenLoaded onCompleted listener will handle the rest of the looping through libraries
+            foundInvalid = true;
             chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
               urls: ['*://*.overdrive.com/*'], //assumes redirections terminate in overdrive.com
               types: ['sub_frame']
-            });
-            //load tab in an iframe, using bg.js webrequest listener to block x-frame-options header
+           });
+            //load tab in an iframe (uses bg.js webrequest listener to block x-frame-options header)
             $('#iframeOpt').attr('src', "http://"+library.libraryURL);
+          } else {
+            //TODO note URL could be empty--just leave it as is for now
+            console.log("a valid libraryURL found: ", library.libraryURL);
+            newLibraryIndex++;
           }
+        }
+        //if all were well formed--save and clear spinner; otherwise, just return and wait for the listener to complete...
+        if (!foundInvalid) {
+          setupDone();
         }
         break;
       case "Not logged in":
@@ -79,47 +100,55 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   }
 });
 
-function runWhenLoaded(info) {
-  console.log('iframeSrcChanged: changed'); //iframeSrcChanged
-  //add listener to get URL when redirection finished
-  console.log("onCompleted, url: ", info.url);
+//listener to run when iframe loaded
+function runWhenLoaded(iframeInfo) {
+  console.log('runWhenLoaded: iframe loaded (onCompleted event fired), url: ', iframeInfo.url); //iframeSrcChanged
   chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
-  if (info.url) {
+  //if resolved, change libraryURL to url of iframe url
+  if (iframeInfo.url) {
     var library = libraries[newLibraryIndex];
-    //console.log(libraries[newLibraryIndex].libraryURL);
-    libraries[newLibraryIndex].libraryURL = info.url.replace(/https?:\/\//i,'').replace(/overdrive.com.*/, 'overdrive.com');
+    console.log("",libraries[newLibraryIndex].libraryURL);
+    libraries[newLibraryIndex].libraryURL = iframeInfo.url.replace(/https?:\/\//i,'').replace(/overdrive.com.*/,'overdrive.com').replace(/libraryreserve.com.*/,'libraryreserve.com');
     console.log("changed url to "+libraries[newLibraryIndex].libraryURL, libraries);
     $('#spinnerP').text('Located '+library.libraryFullName+ ' ... working');
   }
-  //TODO: this needs to be a loop or something if a well former Overdrive URL in the middle
-  newLibraryIndex++; console.log(libraries.length + " libs > index " + newLibraryIndex);
-  //while there are still more libraries... do it again
-  if (libraries.length > newLibraryIndex ) {
+  //avoid slow loading into iframes if URLs are already valid overdrive.com URLs
+  if (libraries.length > (newLibraryIndex + 1)) {
+    newLibraryIndex++; console.log("if libraries.length "+libraries.length+" > "+newLibraryIndex+" newLibraryIndex");
     var library = libraries[newLibraryIndex];
     console.log("next library: "+library.libraryShortName,library);
+    //if a library url is invalid, load it into iframe
     if (library.libraryURL.length > 0 &&
       library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
       library.libraryURL.indexOf(".overdrive.com") == -1 )
     {
+      console.log("invalid libraryURL found: ", library.libraryURL);
+      //add onCompleted listener to get URL when redirection finishes
       chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
-        urls: ['*://*.overdrive.com/*'], //assumes redirections terminate in overdrive.com
+        urls: ['<all_urls>'],
         types: ['sub_frame']
       });
-      console.log("iframing next library "+library.libraryURL);
-      //load tab in an iframe, using bg.js webrequest listener to block x-frame-options header
+      //load tab in the iframe (uses bg.js webrequest listener to block x-frame-options header)
       $('#iframeOpt').attr('src', "http://"+library.libraryURL);
-    } else { console.log("library already overdrive.com, what to do? increment newlibraryIndex?",library.libraryURL); }
+    } else {
+      //TODO note URL could be empty--just leave it as is for now
+      //valid libraryURL is already in libraries array
+      console.log("valid libraryURL found: ", library.libraryURL);
+    }
   } else {
-    //done, need to sync or at least clear menu
-    //TODO: remove end spinner
-    $('#spinnerP').text('Setup Complete!');
-    $('#spinnerP').css('color','green');
-    $('#spinner').fadeOut(2000);
-    console.log("done", libraries);
-    $('#menu').html('');
-    chrome.storage.sync.set({"libraries": libraries}, function() { onNoLibraries = 4; loadLibraries(); });
+    setupDone(); //when no more libraries
   }
 }
+
+function setupDone(){
+  //done, need to sync or at least clear menu
+  $('#spinnerP').text('Setup Complete!');
+  $('#spinnerP').css('color','green');
+  $('#spinner').fadeOut(2000);
+  console.log("setup done", libraries);
+  $('#menu').html('');
+  chrome.storage.sync.set({"libraries": libraries}, function() { onNoLibraries = 4; loadLibraries(); });
+};
 
 function loadLibraries() {
 	//try to retrieve library list from chrome.storage.sync; if not there, parse saved libraries list
