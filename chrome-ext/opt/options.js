@@ -88,13 +88,15 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         break;
       case "Not logged in":
         $('#spinnerP').text(message.status);
+        $('#spinnerP').fadeOut(2000);
         alert("Not logged into OverDrive. Please log into your OverDrive account to find library information from your saved libraries.");
-        window.location.reload();
+        setTimeout(function() {window.location.reload();},2000)
         break;
       case "No saved libraries":
         $('#spinnerP').text(message.status);
+        $('#spinnerP').fadeOut(2000);
         alert("This OverDrive account has no saved libraries. Please save a list of local libraries to find library information for your local libraries (recommended), or enter them manually below.");
-        window.location.reload();
+        setTimeout(function() {window.location.reload();},2000)
         break;
     }
   }
@@ -174,11 +176,8 @@ function loadLibraries() {
       for (var libraryIndex in libraries) {
     		var library = libraries[libraryIndex];
         //console.log('library: ' + library.libraryShortName);
-        var badURL='badURL';
-        //must not have xxx.lib.overdrive
-        //must be xxx.overdrive.com(eol)
-        match = /.*\.overdrive\.com\/?$/mi.exec(library.libraryURL);
-        if (match && library.libraryURL.indexOf(".lib.") == -1) {badURL = "";}
+        var badURL = 'badURL';
+        if (isValidURL(library.libraryURL)) { badURL = '';}
         libRows += "<tr>";
         libRows += "<td><input id='shortName" + libraryIndex + "' value='" + library.libraryShortName + "' class= 'ip ip1' maxlength='15' type='text'/></td>";
         libRows += "<td><input id='URL" + libraryIndex + "' value='" + library.libraryURL + "' class= 'ip "+ badURL + "' type='text'/></td>";
@@ -198,7 +197,7 @@ function saveLibraries() {
   var librariesEdited = [];
 
   for (var libraryIndex in libraries) {
-    libraryUrl = $('#URL'+libraryIndex).val().replace(/^https?:\/\//, '').replace(/overdrive.com.*/, 'overdrive.com');
+    libraryUrl = $('#URL'+libraryIndex).val().replace(/^https?:\/\//, '').replace(/overdrive.com.*/i,'overdrive.com').replace(/\.libraryreserve\.com.*/i,'.libraryreserve.com');
     console.log($('#fullName'+libraryIndex).val());
     //delete any completely blank rows by skipping them
     if (
@@ -307,22 +306,32 @@ String.prototype.firstWord = function (){
 function validateInput() {
   //console.dir(this);
   if ($(this).length == 0) {return;}
+  //if an URL
   if ($(this).attr('id').indexOf("RL") > 0) {
     $(this).val( $(this).val().replace(/[^\.a-z0-9:\/ _]/gi,'') ); //limit allowable characters
-    $(this).val($(this).val().trim());
-    //this is URL
-    $(this).val($(this).val().replace(/^https?:\/\//, '').replace(/\.overdrive\.com.*/, '.overdrive.com').trim());
-    if ($(this).val().length > 0) {
-      console.log($(this).val().indexOf("www.overdrive.com"))
-      if ($(this).val().indexOf('.lib.') == -1
-          && $(this).val().indexOf(".overdrive.com") > 0
-          && $(this).val().indexOf("www.overdrive.com") == -1
-        )
+    $(this).val($(this).val().trim()); //trim it up
+    $(this).val($(this).val().replace(/^https?:\/\//, '').replace(/\.overdrive\.com.*/i,'.overdrive.com'.replace(/\.libraryreserve\.com.*/i,'.libraryreserve.com').trim()));
+    var thisurl = $(this).val();  //this is the URL as it would be saved
+    if (thisurl.length > 0) {
+      console.log(thisurl);
+      if (isValidURL(thisurl))
       { $(this).removeClass('badURL');
       } else { $(this).addClass('badURL'); }
     }
   } else {
+    //if not an URL
     $(this).val( $(this).val().replace(/[^a-z0-9 _]/gi,'') ); //limit allowable characters
     $(this).val($(this).val().trim());
   }
+}
+
+function isValidURL(thisurl) {
+  thisurl = thisurl.toLowerCase();
+  if (thisurl.indexOf('.lib.') == -1 && //no .lib. allowed
+      ( thisurl.indexOf(".overdrive.com") > 0 //and either overdrive but not www.overdrive
+      && thisurl.indexOf("www.overdrive.com") == -1 )
+      || ( thisurl.indexOf(".libraryreserve.com") > 0  //or libraryreserve but not www.libraryreserve
+      && thisurl.indexOf("www.libraryreserve.com") == -1 )
+    ) {return true;}
+  else {return false;}
 }

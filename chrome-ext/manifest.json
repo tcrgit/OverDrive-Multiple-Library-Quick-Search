@@ -3,7 +3,7 @@
 
   "name": "Multiple Library Quick Search",
   "description": "Quickly search a list saved OverDrive libraries and return a book's availability",
-  "version": "2.1",
+  "version": "2.2",
   "browser_action": {
     "default_popup": "popup.html",
     "default_title": "Multiple Library Quick Search"

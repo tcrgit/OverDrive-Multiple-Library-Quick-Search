@@ -23,6 +23,5 @@ for an ebook or audiobook to check out.
 ## Roadmap
 
 * Maintain simple webform as it is ideal on mobile browsers or for a panel in Vivaldi
-* Develop browser extensions for Chrome, Opera and Vivaldi
+* Develop browser extension for Chrome, Vivaldi and Opera
 * Adapt browser extension for Firefox and another browsers such as Safari
-* Consider adding "available to borrow" information from libraryreserve.com (old design)

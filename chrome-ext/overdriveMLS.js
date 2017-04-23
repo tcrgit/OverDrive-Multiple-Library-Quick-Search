@@ -89,58 +89,66 @@ function findBooks() {
 	// for each library, create url to query it
 	for (var libraryIndex in libraries) {
 		var library = libraries[libraryIndex];
-		//console.log(library.libraryShortName + ": " + library.libraryURL);
-		//if a libraryreserve.com old design site, skip but leave link
-		if ( library.libraryURL.length > 0 && library.libraryURL.indexOf(".libraryreserve.com") > 0 ) {
-			console.log(library.libraryURL);
-			//poudreriver.libraryreserve.com/BANGSearch.dll?Type=FullText&FullTextField=All&more=1&FullTextCriteria=winter+holiday
-			//poudreriver.libraryreserve.com/BANGSearch.dll?Type=ISBN&more=1&ISBN=9781567925005
-			//https://poudreriver.libraryreserve.com/10/50/en/ContentDetails.htm?id=D26F1A19-55B2-4032-8088-BA3C190256FE
-			//https://poudreriver.libraryreserve.com/10/50/en/ContentDetails.htm?id=cc74f466-085d-4567-91ff-31220263dee9
-			itemURL = "http://" + library.libraryURL + "/ContentDetails.htm?id="+bookid;
-			$('#MLSresults').append("<b><a target='_blank' href='" + itemURL + "'>" + library.libraryShortName + "</a>:</b> unknown (libraryreserve.com)<br>");
-			fullsize = $('#resultsPane').outerHeight();
-		}
 		//skip if URL empty or not .overdrive.com
-		if (
-			library.libraryURL.length > 0
-			&& library.libraryURL.indexOf(".overdrive.com") > 0
-			&& library.libraryURL.indexOf(".lib.overdrive.com") == -1
-			&& library.libraryURL.indexOf("www.overdrive.com") == -1
-		) {
+		if ( library.libraryURL.length > 0
+					&& (library.libraryURL.indexOf(".libraryreserve.com") > 0 )
+					|| (library.libraryURL.indexOf(".overdrive.com") > 0
+					&& library.libraryURL.indexOf(".lib.overdrive.com") == -1
+					&& library.libraryURL.indexOf("www.overdrive.com") == -1 )
+				)
+		{
 			libsDone++;
 			console.log('libraryURL ', library.libraryURL, libraryIndex);
-			overdriveUrl = "https://" + library.libraryURL + "/media/" + bookid;
+			//set item URL for ajax accordingly
+			if (library.libraryURL.indexOf(".libraryreserve.com") > 0 ) {
+				itemURL = "https://" + library.libraryURL + "/ContentDetails.htm?id="+bookid;
+			} else { itemURL = "https://" + library.libraryURL + "/media/" + bookid; }
 			$.ajax({
-				url: overdriveUrl,
+				url: itemURL,
 				libraryShortName: library.libraryShortName
 			}).done(function( data, textStatus, jqXHR ) {
-				//extract the list of books from js variable
-				var match = /\.mediaItems ?=(.*?});/.exec(data);
-				if (match) {
-					bookList = JSON.parse(match[1].trim());
-					// iterate over books; even with a single item data it is formatted this way
-					for (var key in bookList) {
-						var book = bookList[key];
-						//console.log(book);
-						//update resultsPane with availability information
-						var availString = "";
-						if (book.isAvailable) {
-							availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>: <a target='_blank' href='" + this.url + "' style='color:#73CEE1'>Available to borrow!</a></b><br>";
+				console.log("inside ajax: "+this.url);
+				var isAvailable = false, libCopies = 0, numHolds, numAvailable;
+				if (this.url.indexOf(".libraryreserve.com") > 0) {
+					//extract the availability info from misc. js variables
+					var match = /deAvailCop\s?=\s?"?(.*?)"?;/.exec(data); //book.isAvailable
+					numAvailable = match[1].trim();
+					if (numAvailable > 0) {isAvailable = true;}
+					match = /deLibCopies\s?=\s?"?(.*?)"?;/.exec(data); //book.ownedCopies
+					libCopies = match[1].trim();
+					match = /deNumWaiting\s?=\s?"?(.*?)"?;/.exec(data); //book.holdsCount
+					numHolds = match[1].trim();
+				} else {
+					//extract the availability info from js bookList variable
+					var match = /\.mediaItems ?=(.*?});/.exec(data);
+					if (match) {
+						bookList = JSON.parse(match[1].trim());
+						// iterate over books; even with a single item data it is formatted this way
+						for (var key in bookList) {
+							var book = bookList[key];
+							//console.log(book);
+							isAvailable = book.isAvailable;
+							libCopies = book.ownedCopies;
+							numHolds = book.holdsCount;
 						}
-						else {
-							if (book.ownedCopies) {
-								availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> " + book.holdsCount + " hold" + (book.holdsCount == 1 ? "" : "s") + " on " + book.ownedCopies + " cop" + (book.ownedCopies == 1 ? "y" : "ies") + "<br>";
-							} else {
-								availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> No copies owned<br>";
-							}
-						}
-						//console.log(availString);
-						$('#MLSresults').append(availString);
-						fullsize = $('#resultsPane').outerHeight();
-						//console.log("fullsize: "+fullsize);
 					}
 				}
+				console.log ("isAvailable: "+isAvailable+" libCopies: "+libCopies+" numHolds: "+numHolds+" numAvailable: "+numAvailable)
+				//update resultsPane with availability information
+				var availString = "";
+				if (isAvailable) {
+					availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>: <a target='_blank' href='" + this.url + "' style='color:#73CEE1'>Available to borrow!</a></b><br>";
+				} else {
+					if (libCopies > 0) {
+						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> " + numHolds + " hold" + (numHolds == 1 ? "" : "s") + " on " + libCopies + " cop" + (libCopies == 1 ? "y" : "ies") + "<br>";
+					} else {
+						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> No copies owned<br>";
+					}
+				}
+				//console.log(availString);
+				$('#MLSresults').append(availString);
+				fullsize = $('#resultsPane').outerHeight();
+				//console.log("fullsize: "+fullsize);
 		  });
 	  }
 	} //end libraries array for loop
