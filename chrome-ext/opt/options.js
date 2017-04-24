@@ -12,6 +12,7 @@ $(document).ready(function() {
     //TODO: quick access some MLS libraries for debugging
     if ($('#shortName0').val() == "goLib1") {initLibraries(1);}
     if ($('#shortName0').val() == "goLib2") {initLibraries(2);}
+    if ($('#shortName0').val() == "goLib3") {initLibraries(3);}
     if ($('#shortName0').val() == "clearLib") {chrome.storage.sync.clear(); window.location.reload();}
     addRow();
   });
@@ -62,15 +63,15 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         while (libraries.length > newLibraryIndex && !foundInvalid) {
           var library = libraries[newLibraryIndex];
           //find first library that is invalid and load it into iframe
-          if (library.libraryURL.length > 0 &&
-            library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
-            library.libraryURL.indexOf(".overdrive.com") == -1 )
+          if ( library.libraryURL.length > 0                           //if url not blank
+            && (library.libraryURL.indexOf(".lib.overdrive.com") > 0   //and url is either .lib. form
+            || library.libraryURL.indexOf(".overdrive.com") == -1 ) )  //or url is not at overdrive.com
           {
             console.log("first invalid libraryURL found: ", library.libraryURL);
             //runWhenLoaded onCompleted listener will handle the rest of the looping through libraries
             foundInvalid = true;
             chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
-              urls: ['*://*.overdrive.com/*'], //assumes redirections terminate in overdrive.com
+              urls: ['<all_urls>'],
               types: ['sub_frame']
            });
             //load tab in an iframe (uses bg.js webrequest listener to block x-frame-options header)
@@ -88,13 +89,13 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         break;
       case "Not logged in":
         $('#spinnerP').text(message.status);
-        $('#spinnerP').fadeOut(2000);
+        $('#spinner').fadeOut(2000);
         alert("Not logged into OverDrive. Please log into your OverDrive account to find library information from your saved libraries.");
         setTimeout(function() {window.location.reload();},2000)
         break;
       case "No saved libraries":
         $('#spinnerP').text(message.status);
-        $('#spinnerP').fadeOut(2000);
+        $('#spinner').fadeOut(2000);
         alert("This OverDrive account has no saved libraries. Please save a list of local libraries to find library information for your local libraries (recommended), or enter them manually below.");
         setTimeout(function() {window.location.reload();},2000)
         break;
@@ -120,9 +121,9 @@ function runWhenLoaded(iframeInfo) {
     var library = libraries[newLibraryIndex];
     console.log("next library: "+library.libraryShortName,library);
     //if a library url is invalid, load it into iframe
-    if (library.libraryURL.length > 0 &&
-      library.libraryURL.indexOf(".lib.overdrive.com") > 0 ||
-      library.libraryURL.indexOf(".overdrive.com") == -1 )
+    if ( library.libraryURL.length > 0                          //if url is not blank
+      && (library.libraryURL.indexOf(".lib.overdrive.com") > 0  //and url is either of .lib. form
+      || library.libraryURL.indexOf(".overdrive.com") == -1) )  //or url is not at overdrive.com
     {
       console.log("invalid libraryURL found: ", library.libraryURL);
       //add onCompleted listener to get URL when redirection finishes
@@ -235,6 +236,17 @@ function initLibraries(onNoLibraries) {
     	{ "libraryShortName": "Aurora", "libraryURL": "Aurora.overdrive.com", "libraryFullName": "Aurora Public Library" },
     	{ "libraryShortName": "Anythink", "libraryURL": "AnythinkLibraries.overdrive.com", "libraryFullName": "Rangeview Library District" },
     	{ "libraryShortName": "Douglas", "libraryURL": "dcl.overdrive.com", "libraryFullName": "Douglas County Libraries" }
+    ];
+    //save libraries
+    chrome.storage.sync.set({"libraries": libraries}, function() { });
+    window.location.reload();
+  }
+  if (onNoLibraries == 3) {
+    libraries = [
+      { "libraryShortName": "Boulder", "libraryURL": "FrontRange.overdrive.com", "libraryFullName": "Front Range Downloadable Library" },
+      { "libraryShortName": "Poudre", "libraryURL": "PoudreRiver.libraryreserve.com", "libraryFullName": "Poudre River Library District" },
+      { "libraryShortName": "Arapahoe", "libraryURL": "Arapahoe.overdrive.com", "libraryFullName": "Arapahoe Library District" },
+      { "libraryShortName": "Denver", "libraryURL": "Denver.overdrive.com", "libraryFullName": "Denver Public Library" }
     ];
     //save libraries
     chrome.storage.sync.set({"libraries": libraries}, function() { });
