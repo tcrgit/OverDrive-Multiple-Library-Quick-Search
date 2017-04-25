@@ -57,6 +57,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     switch (message.status) {
       case "Success":
         libraries = message.response.newLibraries;
+        //save regardless
+        chrome.storage.sync.set({"libraries": message.response.newLibraries});
         newLibraryIndex = 0;
         var foundInvalid = false;
         //avoid slow loading into iframes if URLs are valid overdrive.com URLs
@@ -73,7 +75,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
             chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
               urls: ['<all_urls>'],
               types: ['sub_frame']
-           });
+            });
             //load tab in an iframe (uses bg.js webrequest listener to block x-frame-options header)
             $('#iframeOpt').attr('src', "http://"+library.libraryURL);
           } else {
@@ -91,22 +93,22 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
         $('#spinnerP').text(message.status);
         $('#spinner').fadeOut(2000);
         alert("Not logged into OverDrive. Please log into your OverDrive account to find library information from your saved libraries.");
-        setTimeout(function() {window.location.reload();},2000)
+        setTimeout(function() {window.location.reload();},2000);
         break;
       case "No saved libraries":
         $('#spinnerP').text(message.status);
         $('#spinner').fadeOut(2000);
         alert("This OverDrive account has no saved libraries. Please save a list of local libraries to find library information for your local libraries (recommended), or enter them manually below.");
-        setTimeout(function() {window.location.reload();},2000)
+        setTimeout(function() {window.location.reload();},2000);
         break;
     }
+    console.log("end _foundSavedLibraries");
   }
 });
 
 //listener to run when iframe loaded
 function runWhenLoaded(iframeInfo) {
   console.log('runWhenLoaded: iframe loaded (onCompleted event fired), url: ', iframeInfo.url); //iframeSrcChanged
-  chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
   //if resolved, change libraryURL to url of iframe url
   if (iframeInfo.url) {
     var library = libraries[newLibraryIndex];
@@ -126,11 +128,6 @@ function runWhenLoaded(iframeInfo) {
       || library.libraryURL.indexOf(".overdrive.com") == -1) )  //or url is not at overdrive.com
     {
       console.log("invalid libraryURL found: ", library.libraryURL);
-      //add onCompleted listener to get URL when redirection finishes
-      chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
-        urls: ['<all_urls>'],
-        types: ['sub_frame']
-      });
       //load tab in the iframe (uses bg.js webrequest listener to block x-frame-options header)
       $('#iframeOpt').attr('src', "http://"+library.libraryURL);
     } else {
@@ -139,6 +136,8 @@ function runWhenLoaded(iframeInfo) {
       console.log("valid libraryURL found: ", library.libraryURL);
     }
   } else {
+    console.log("runWhenLoaded removed");
+    chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
     setupDone(); //when no more libraries
   }
 }
