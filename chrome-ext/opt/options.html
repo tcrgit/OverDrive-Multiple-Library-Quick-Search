@@ -3,16 +3,18 @@
 	<title>Multiple Library Quick Search Options</title>
   <style>
     body {font-size:100%; max-width: 710px; margin: auto;}
-		#container {margin: 10px}
-		#about div, #setup div, #normal div {padding:10px; border:1px solid black; border-radius: 5px; margin-bottom: 10px; }
-		th {width:250px;font-size:90%}
-		li {font-size: 100%; padding-bottom: 2px}
+		#container {margin: 10px;}
+		#about div, #setup div, #normal div {padding:10px; border:1px solid black; border-radius: 5px; margin-bottom: 10px;}
+		#setupStatusBar {border-color:red; background-color: yellow; color:red; display:none;}
+		#menuStatusBar {color:green; padding:10px; border:1px solid black; border-radius: 5px; margin: 10px; display:none;}
+		th {width:250px;font-size:90%;}
+		li {font-size: 90%; padding-bottom: 2px;}
 		p {font-size:90%; margin-bottom: 0px;}
 		.ip {font-size: 100%; min-width:250px;}
 		.ip1 {min-width:150px;}
-		.badURL {background-color: #FFE4E1}
-		.hidden {display:none}
-		#spinner {text-align:center;position:fixed;left:100px;top:190px;width:400px;z-index:100;margin:0px;display:none}
+		.badURL {background-color: #FFE4E1;}
+		.hidden {display:none;}
+		#spinner {text-align:center;position:fixed;left:100px;top:190px;width:400px;z-index:100;margin:0px;display:none;}
 		#spinner div {padding:10px;border:3px solid blue;border-radius:5px;background-color:#F5F5F5;}
   </style>
   <script type="text/javascript" src="../jquery-3.2.0.min.js"></script>
@@ -22,38 +24,41 @@
 <div id="container">
 	<div id="setup"><div>
 		<h4 style="color:red; margin-top:0px">Setup Required - No OverDrive libraries found yet</h4>
+		<div id='setupStatusBar'></div>
 		<ol>
-			<li>Please make sure you are logged into your <a href="https://www.overdrive.com" target="_blank">OverDrive</a> account.</li>
-			<li>You must have saved at least one library on the OverDrive website.</li>
-			<li>To automatically find the names and websites of your libraries,
-				press the "Setup" button.</li>
+			<li>Please make sure you are logged into your <a href="https://www.overdrive.com" target="_blank">www.OverDrive.com</a> account.
+				Note that your OverDrive account is not the same as having a card account for each individual library,
+				though it will save your library card information to it as you checkout books while logged in.</li>
+			<li>You must have saved at least one library in your OverDrive account. To find and save libraries, use
+				the "Find a library" link at the top right of the <a href="https://www.overdrive.com" target="_blank">OverDrive</a> website.</li>
+			<li>To automatically find the names and websites of your saved libraries, press the Setup button.</li>
 			<li>The setup process will take a few seconds as it gathers your saved libraries and attempts
-				to determine the correct web address for each of them.</li>
-			<li>Note that this extension should work with those libraries that still use web
-				addresses ending in LibraryReserve.com for their ebook collections.</li>
+				to determine the correct Overdrive.com (or LibraryReserve.com) web address for searching them.</li>
+			<li>Should the setup process not finish in under a minute, press the Cancel Setup button. You may then
+				need to find and enter the correct web address manually as described below.</li>
 		</ol>
 		<button id='btnSetup'>Setup</button>
-		<p>You may enter your library information manually by using the Add and Save buttons.
-			If the web address does not point to an OverDrive.com site, its background will turn red.
-			This means it will not show up in the Multiple Library Search results.</p>
-		<p>In a few cases where a library still uses its own domain name for ebooks,
-			the extension might not be able to determine the correct OverDrive.com address.
-		 	To fix it, navigate to the library's OverDrive website in a new browser tab, then
-			copy and paste the website address from the location bar of your browser into these options and save.</p>
-		</div></div>
+		<p>You may also enter your library information manually by using the Add and Save buttons below.
+			If a web address does not point to a valid library on OverDrive.com or LibraryReserve.com,
+			its background will turn red. This means it will not show up in the Multiple Library Search results.</p>
+		<p>In a few cases where a library still uses its own domain name for ebooks, the extension
+			might not be able to resolve the correct OverDrive.com or LibraryReserve.com address.
+		 	To fix such problems: Navigate to the library's OverDrive website in a new browser tab, then copy
+			and paste the website address from the location bar of your browser into these options and save.</p>
+	</div></div>
 
-		<div id="about"><div>
-			<b>About Multiple Library Search</b>
-			<p><img src="popup.png" style="float:right; height:240px; margin-left:6px;">
-				This extension adds a results box hovering over an OverDrive search or book item page showing
-				its availability for all of your saved libraries. Now you can see at a glance which libraries
-				have the book available to borrow, how many holds are on how many copies at each library,
-				and which libraries might not even own the book. One click takes you directly to a library to borrow it,
-				or click elsewhere on the box to shrink or expand it to read the page beneath it.</p>
-			<p><img src="MLSresults.png" style="float:left; width:300px; margin-right:7px; vertical-align:bottom">
-				This extension also adds a popup button to your chrome toolbar. Use it to quickly search OverDrive
-				for an ebook or audiobook you wish to check out.</p>
-			</div></div>
+	<div id="about"><div>
+		<b>About Multiple Library Search</b>
+		<p><img src="popup.png" style="float:right; height:240px; margin-left:6px;">
+			This extension adds a results box hovering over an OverDrive search or book item page showing
+			its availability for all of your saved libraries. Now you can see at a glance which libraries
+			have the book available to borrow, how many holds are on how many copies at each library,
+			and which libraries might not even own the book. One click takes you directly to a library to borrow it,
+			or click elsewhere on the box to shrink or expand it to read the page beneath it.</p>
+		<p><img src="MLSresults.png" style="float:left; width:300px; margin-right:7px; vertical-align:bottom">
+			This extension also adds a popup button to your chrome toolbar. Use it to quickly search all of your 
+			OverDrive libraries at once for an ebook or audiobook that you wish to check out.</p>
+	</div></div>
 
 	<table>
 		<thead>
@@ -62,6 +67,7 @@
   	<tbody id='menu'>
 		</body>
   </table>
+	<div id='menuStatusBar'></div>
 	<br />
 	<button id='btnSave'>Save</button>
 	<button id='btnAdd'>Add</button>
@@ -72,18 +78,20 @@
 	<div id="normal"><div>
 		<h4 style="color:green; margin-top:0px">Setup Complete!</h4>
 		<p>
-			Your saved OverDrive libraries are listed in the table. The library abbreviation is what appears
-			in the Multiple Library Search Results box. The OverDrive web address points to each
-			library's individual ebook collection on OverDrive. The full name of each library (or the library district
-			or library consortium) is in the last column.</p>
+			Your saved OverDrive libraries are listed in the table above. The library abbreviation is what appears
+			in the Multiple Library Search Results box whenever you search your saved libraries from
+			<a href="https://www.overdrive.com" target="_blank">www.OverDrive.com</a>.
+			The OverDrive web address column points to each library's individual ebook collection on the web.
+			The full name of each library (or the library district or library consortium) is in the final column.</p>
 		<p>You may edit your library information manually. The Add button adds a blank row for a new library.
 			A library may be deleted entirely by clearing all three of its columns, or you may clear just its web
 			address to omit it from the Multiple Library Search Results box. No changes take effect until you
 			save them. To cancel without saving, just close or reload this options popup.</p>
-		<p>If the website address does not point to an OverDrive.com site, its background will turn red.
-			This means it will not show up in the Multiple Library Search results. To rerun setup and try to automatically determine the library information again, you can use
-			the Clear & Setup button to the right. You will delete any edits you have made to the list of libraries.</p>
-		<p>Note that this extension should also work with those libraries that still use
+		<p>If a web address does not point to a valid OverDrive.com (or LibraryReserve.com) website,
+			its background will turn red. This means it will not show up in the Multiple Library Search results.
+			To rerun setup and try to automatically determine the library information again, you can use the Clear
+			&amp; Setup button to the right. This will delete any edits you have made to the list of libraries.</p>
+		<p>Note that this extension should also work with those OverDrive libraries that still use
 			a LibraryReserve.com web address for their ebook collections.</p>
 	</div></div>
 </div>
