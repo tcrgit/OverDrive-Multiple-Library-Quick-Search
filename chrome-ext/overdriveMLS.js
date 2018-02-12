@@ -140,7 +140,7 @@ function findBooks() {
 					availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>: <a target='_blank' href='" + this.url + "' style='color:#73CEE1'>Available to borrow!</a></b><br>";
 				} else {
 					if (libCopies > 0) {
-						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> " + numHolds + " hold" + (numHolds == 1 ? "" : "s") + " on " + libCopies + " cop" + (libCopies == 1 ? "y" : "ies") + "<br>";
+						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> " + numHolds + " hold" + (numHolds == 1 ? "" : "s") + " on " + libCopies + " cop" + (libCopies == 1 ? "y" : "ies") + "(" + Math.round(numHolds/libCopies) + " per)<br>";
 					} else {
 						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> No copies owned<br>";
 					}

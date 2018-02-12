@@ -5,13 +5,13 @@ function submitq() {
   } else {
     var bookFormat = '', debug = false;
     var URLbase = 'https://www.overdrive.com/search?q=';
-    var savedLibs = '&f-consortium=all%7CAll%20saved%20libraries&autoLibrary=f&autoRegion=t';
     var q = encodeURIComponent(response);
+    var localLibs = '&autoLibrary=f&autoRegion=t';
 
     if (document.getElementById("eBookOnly").checked) {bookFormat = '&f-formatClassification=eBook';}
     if (document.getElementById("AudiobookOnly").checked) {bookFormat = '&f-formatClassification=Audiobook';}
 
-    var overdriveURL = URLbase + q + savedLibs + bookFormat
+    var overdriveURL = URLbase + q + localLibs + bookFormat
     var infostring = "Query: "+ q + "   Format: " + bookFormat;
     console.log(infostring);
     console.log(overdriveURL);

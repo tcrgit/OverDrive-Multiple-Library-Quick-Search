@@ -1,4 +1,4 @@
-var libraries = [], newLibraryIndex = 0, onNoLibraries = 5; //normal is 5
+var libraries = [], newLibraryIndex = 0, libsNotFound = [], onNoLibraries = 5; //normal is 5
 //chrome.storage.sync.clear(); //TODO: for debugging
 
 $(document).ready(function() {
@@ -66,8 +66,15 @@ function foundSavedLibraries(message) {
         //save always, even before resolving vanity library URLs
         chrome.storage.sync.set({"libraries": message.response.newLibraries});
         newLibraryIndex = 0;
-        var foundInvalid = false;
-        //avoid slow loading into iframes if URLs are valid overdrive.com URLs
+        var foundInvalid = false; //avoid slow loading into iframes if URLs are valid overdrive.com URLs
+        chrome.webRequest.onErrorOccurred.addListener(libFailed,{
+          urls: ['<all_urls>'], types: ['sub_frame']
+        });
+        chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
+          urls: ['<all_urls>'], types: ['sub_frame']
+        });
+        libsNotFound = []; doingLibsNotFound=0;
+        //if the first few libraries are valid, skip loading them into iframe
         while (libraries.length > newLibraryIndex && !foundInvalid) {
           var library = libraries[newLibraryIndex];
           //find first library that is invalid and load it into iframe
@@ -75,23 +82,24 @@ function foundSavedLibraries(message) {
             && (library.libraryURL.indexOf(".lib.overdrive.com") > 0   //and url is either .lib. form
             || library.libraryURL.indexOf(".overdrive.com") == -1 ) )  //or url is not at overdrive.com
           {
-            console.log("first invalid libraryURL found: ", library.libraryURL);
-            //runWhenLoaded onCompleted listener will handle the rest of the looping through libraries
-            foundInvalid = true;
-            chrome.webRequest.onCompleted.addListener(runWhenLoaded, {
-              urls: ['<all_urls>'],
-              types: ['sub_frame']
-            });
+            console.log("First invalid libraryURL found: ", library.libraryURL);
+            foundInvalid = true; //runWhenLoaded onCompleted listener will handle the rest of the looping through libraries
             //load tab in an iframe (uses bg.js webrequest listener to block x-frame-options header)
+            timer = setTimeout(function(){
+              console.log("!Unable to load "+library.libraryURL);
+              libsNotFound.push(newLibraryIndex);
+            },3000);
             $('#iframeOpt').attr('src', "http://"+library.libraryURL);
           } else {
             //TODO note URL could be empty--just leave it as is for now
-            console.log("a valid libraryURL found: ", library.libraryURL);
+            console.log("A valid libraryURL found: ", library.libraryURL);
             newLibraryIndex++;
           }
         }
         //if all were well formed--save and clear spinner; otherwise, just fall through to end of listener...
         if (!foundInvalid) {
+          chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
+          chrome.webRequest.onErrorOccurred.removeListener(libFailed);
           setupDone();
         }
         break;
@@ -119,39 +127,82 @@ function foundSavedLibraries(message) {
   }
 }
 
+function libFailed(iframeInfo) {
+  $('#spinnerP').text('Failed on '+library.libraryFullName+ '. Please manually setup OverDrive urls.');
+  console.log('runWhenLoaded: iframe loading failed (onErrorOccurred event fired), url: ', iframeInfo.url);
+  chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
+  chrome.webRequest.onErrorOccurred.removeListener(libFailed);
+  setupDone();
+}
+
 //listener to run when iframe loaded -- loops through all remaining libraries to determine URLs if needed
 function runWhenLoaded(iframeInfo) {
-  console.log('runWhenLoaded: iframe loaded (onCompleted event fired), url: ', iframeInfo.url); //iframeSrcChanged
+  clearTimeout(timer);
+  console.log(' runWhenLoaded: iframe loaded (onCompleted event fired), url: ', iframeInfo.url); //iframeSrcChanged
   //if resolved, change libraryURL to url of iframe url
   if (iframeInfo.url) {
     var library = libraries[newLibraryIndex];
-    console.log("",libraries[newLibraryIndex].libraryURL);
+    //console.log(" newurl: ",libraries[newLibraryIndex].libraryURL);
     libraries[newLibraryIndex].libraryURL = iframeInfo.url.replace(/https?:\/\//i,'').replace(/overdrive.com.*/,'overdrive.com').replace(/libraryreserve.com.*/,'libraryreserve.com');
-    console.log("changed url to "+libraries[newLibraryIndex].libraryURL, libraries);
-    $('#spinnerP').text('Located '+library.libraryFullName+ ' ... working');
+    console.log(" Successfully changed url to "+libraries[newLibraryIndex].libraryURL, libraries);
+    $('#spinnerP').text('Located '+library.libraryFullName+ ' ...');
   }
-  //avoid slow loading into iframes if URLs are already valid overdrive.com URLs
-  if (libraries.length > (newLibraryIndex + 1)) {
-    newLibraryIndex++; console.log("if libraries.length "+libraries.length+" > "+newLibraryIndex+" newLibraryIndex");
+  sleep(500); //pause to avoid hammering OD server
+  //avoid slow loading into iframes if URLs are already valid overdrive.com URLs? can't solve this?
+  if (libraries.length > (newLibraryIndex + 1) && !doingLibsNotFound) {
+    newLibraryIndex++; //console.log("if libraries.length "+libraries.length+" > "+newLibraryIndex+" newLibraryIndex");
     var library = libraries[newLibraryIndex];
-    console.log("next library: "+library.libraryShortName,library);
+    console.log("Starting on next library: "+library.libraryShortName);
     //if a library url is invalid, load it into iframe
     if ( library.libraryURL.length > 0                          //if url is not blank
       && (library.libraryURL.indexOf(".lib.overdrive.com") > 0  //and url is either of .lib. form
       || library.libraryURL.indexOf(".overdrive.com") == -1) )  //or url is not at overdrive.com
     {
-      console.log("invalid libraryURL found: ", library.libraryURL);
+      //console.log(" Invalid libraryURL found: ", library.libraryURL);
+      timer = setTimeout(function(){
+        console.log(" !Unable to load " + library.libraryURL + " newLibraryIndex: " + newLibraryIndex);
+        //store for later
+        if (!doingLibsNotFound) libsNotFound.push(newLibraryIndex);
+        iframeInfo.url = library.libraryURL;
+        runWhenLoaded(iframeInfo);
+      }, 3000);
       //load tab in the iframe (uses bg.js webrequest listener to block x-frame-options header)
       $('#iframeOpt').attr('src', "http://"+library.libraryURL);
     } else {
       //TODO note URL could be empty--just leave it as is for now
       //valid libraryURL is already in libraries array
-      console.log("valid libraryURL found: ", library.libraryURL);
+      //console.log(" Valid libraryURL found: ", library.libraryURL);
+      timer = setTimeout(function(){
+        console.log(" !Unable to load valid " + library.libraryURL);
+        iframeInfo.url = library.libraryURL;
+        if (!doingLibsNotFound) libsNotFound.push(newLibraryIndex);
+        runWhenLoaded(iframeInfo);
+      }, 3000);
+      $('#iframeOpt').attr('src', "http://"+library.libraryURL); //can't skip this? won't call runWhenLoaded
+      $('#spinnerP').text('Valid '+library.libraryFullName+ ' found ... ');
     }
   } else {
-    console.log("runWhenLoaded removed");
-    chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
-    setupDone(); //when no more libraries
+    //console.log(doingLibsNotFound, " < libsNotFound.length: " + libsNotFound.length, libsNotFound)
+    if (doingLibsNotFound < libsNotFound.length) { //try not found libs again...
+      sleep(500);
+      newLibraryIndex = libsNotFound[doingLibsNotFound];
+      doingLibsNotFound++; //prevent runWhenLoaded searching for next lib after this one
+      console.log("Retrying newLibraryIndex: " + newLibraryIndex);
+      console.log("Retrying " + libraries[newLibraryIndex].libraryURL)
+      timer = setTimeout(function(){
+        console.log(" !Unable to load " + libraries[newLibraryIndex].libraryURL + " even on retry!");
+        $('#spinnerP').text(libraries[newLibraryIndex].libraryFullName+ ' failed on retry. Please fix the URL manually. ')
+        iframeInfo.url = library.libraryURL;
+        runWhenLoaded(iframeInfo);
+      }, 3000);
+      $('#spinnerP').text('Retrying '+libraries[newLibraryIndex].libraryFullName+ ' one more time ... ');
+      $('#iframeOpt').attr('src', "http://"+libraries[newLibraryIndex].libraryURL);
+    } else {
+      console.log("runWhenLoaded removed"); //done, no more libraries in list
+      chrome.webRequest.onCompleted.removeListener(runWhenLoaded);
+      chrome.webRequest.onErrorOccurred.removeListener(libFailed);
+      setupDone(); //when no more libraries
+    }
   }
 }
 
@@ -383,8 +434,14 @@ function isValidURL(thisurl) {
   else {return false;}
 }
 
+//sleep in ms
+function sleep(ms) {
+  ms += new Date().getTime();
+  while (new Date() < ms){}
+}
+
 function quickAccess(){
-  //TODO: remove quick access some MLS libraries for debugging
+  //TODO: remove quick access to some MLS libraries (for debugging)
   if ($('#shortName0').val() == "goLib1") {initLibraries(1); return true;}
   if ($('#shortName0').val() == "goLib2") {initLibraries(2); return true;}
   if ($('#shortName0').val() == "goLib3") {initLibraries(3); return true;}

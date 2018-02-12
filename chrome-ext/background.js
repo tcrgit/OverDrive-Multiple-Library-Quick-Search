@@ -14,9 +14,9 @@ chrome.runtime.onMessage.addListener(function(message, sender) {
     //create iframe
     document.body.insertAdjacentHTML('beforeend', '<iframe id="iframe1"></iframe>');
     //load url in an iframe, using bg.js webrequest listener to block x-frame-options header
+    console.log('iframe loading');
     $("#iframe1").off("load").on("load", passWhenLoaded);
     $('#iframe1').attr('src', findLibrariesURL);
-    console.log('iframe loading');
   }
   //message from content script to open options page
   if (message.type == '_openOptionsPage') {
@@ -38,28 +38,28 @@ var iframePort;
 chrome.runtime.onConnect.addListener(port => {
     // save in a global variable to access it later from other functions
     iframePort = port;
-    //this just passes info to outer console.log for easier debugging
+    //this just passes info to outer bg console.log for easier debugging
     port.onMessage.addListener(msg => {
-        if (msg.console) console.log(msg.console);
+      if (msg.console) console.log(msg.console);
     });
 });
 
-// This is to remove X-Frame-Options header, if present
+// Removes the X-Frame-Options header and content-security-policy headers if found
 chrome.webRequest.onHeadersReceived.addListener(
   function(info) {
     var headers = info.responseHeaders;
+    var index0 = headers.findIndex(x=>x.name.toLowerCase() == "content-security-policy");
     var index = headers.findIndex(x=>x.name.toLowerCase() == "x-frame-options");
-    var oldheaders = headers;
-    //console.log("insideOHR", oldheaders, index);
-    if (index !=-1) {
-      headers.splice(index, 1);
-	    //console.log("x-frame-options removed")
+    //console.log("insideOHR", info.responseHeaders, index0, index);
+    if (index0 !=-1) {
+      headers[index0].value=''; //console.log("content-security-policy header blanked");
     }
+    if (index !=-1) {
+      headers.splice(index, 1); //console.log("x-frame-options removed");
+    }
+    //console.log("insideOHRnewheaders", headers, index0, index);
     return {responseHeaders: headers};
   },
-  {
-    urls: ['<all_urls>'], //
-    types: ['sub_frame']
-  },
+  { urls: ['<all_urls>'], types: ['sub_frame'] },
   ['blocking', 'responseHeaders']
 );
