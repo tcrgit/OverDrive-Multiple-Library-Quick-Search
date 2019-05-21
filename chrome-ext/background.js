@@ -8,7 +8,7 @@ chrome.runtime.onInstalled.addListener(
 );
 
 //listener to pass messages from options to findSavedLibraries and back
-chrome.runtime.onMessage.addListener(function(message, sender) {
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   if (message.type == '_findSavedLibraries') {
     var findLibrariesURL = "https://www.overdrive.com/media/789876";
     //create iframe
@@ -21,6 +21,47 @@ chrome.runtime.onMessage.addListener(function(message, sender) {
   //message from content script to open options page
   if (message.type == '_openOptionsPage') {
     chrome.runtime.openOptionsPage();
+  }
+  //message from content script to check on book from library
+  if (message.type == "_libraryStatus") {
+    //this should just pass the URI in new CORBS model
+    var url = message.url;
+    var libraryShortName = message.libraryShortName;
+    //console.log("_libraryStatus"+url);
+    fetch(url)
+      .then(function( response ) { return response.text() } )
+      .then(function( data ) {
+        //console.log(url)
+        //console.log(data)
+        var isAvailable = false, libCopies = 0, numHolds, numAvailable;
+    		if (url.indexOf(".libraryreserve.com") > 0) {
+    			//extract the availability info from misc. js variables
+    			var match = /deAvailCop\s?=\s?"?(.*?)"?;/.exec(data); //book.isAvailable
+    			numAvailable = match[1].trim();
+    			if (numAvailable > 0) {isAvailable = true;}
+    			match = /deLibCopies\s?=\s?"?(.*?)"?;/.exec(data); //book.ownedCopies
+    			libCopies = match[1].trim();
+    			match = /deNumWaiting\s?=\s?"?(.*?)"?;/.exec(data); //book.holdsCount
+    			numHolds = match[1].trim();
+    		} else {
+  			//extract the availability info from js bookList variable
+  			var match = /\.mediaItems ?=(.*?});/.exec(data);
+  			if (match) {
+  				bookList = JSON.parse(match[1].trim());
+  				// iterate over books; even with a single item data it is formatted this way
+  				for (var key in bookList) {
+  					var book = bookList[key];
+  					//console.log(book);
+  					isAvailable = book.isAvailable;
+  					libCopies = book.ownedCopies;
+  					numHolds = book.holdsCount;
+  				}
+  			}
+  		}
+    		//console.log ( "isAvailable: "+isAvailable+" libCopies: "+libCopies+" numHolds: "+numHolds+" numAvailable: "+numAvailable );
+        sendResponse( { isAvailable: isAvailable, libCopies: libCopies, numHolds: numHolds, numAvailable: numAvailable, url: url, libraryShortName: libraryShortName } );
+      })
+    return true;
   }
 });
 

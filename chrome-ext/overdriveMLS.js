@@ -103,53 +103,29 @@ function findBooks() {
 			if (library.libraryURL.indexOf(".libraryreserve.com") > 0 ) {
 				itemURL = "https://" + library.libraryURL + "/ContentDetails.htm?id="+bookid;
 			} else { itemURL = "https://" + library.libraryURL + "/media/" + bookid; }
-			$.ajax({
-				url: itemURL,
-				libraryShortName: library.libraryShortName
-			}).done(function( data, textStatus, jqXHR ) {
-				console.log("inside ajax: "+this.url);
-				var isAvailable = false, libCopies = 0, numHolds, numAvailable;
-				if (this.url.indexOf(".libraryreserve.com") > 0) {
-					//extract the availability info from misc. js variables
-					var match = /deAvailCop\s?=\s?"?(.*?)"?;/.exec(data); //book.isAvailable
-					numAvailable = match[1].trim();
-					if (numAvailable > 0) {isAvailable = true;}
-					match = /deLibCopies\s?=\s?"?(.*?)"?;/.exec(data); //book.ownedCopies
-					libCopies = match[1].trim();
-					match = /deNumWaiting\s?=\s?"?(.*?)"?;/.exec(data); //book.holdsCount
-					numHolds = match[1].trim();
-				} else {
-					//extract the availability info from js bookList variable
-					var match = /\.mediaItems ?=(.*?});/.exec(data);
-					if (match) {
-						bookList = JSON.parse(match[1].trim());
-						// iterate over books; even with a single item data it is formatted this way
-						for (var key in bookList) {
-							var book = bookList[key];
-							//console.log(book);
-							isAvailable = book.isAvailable;
-							libCopies = book.ownedCopies;
-							numHolds = book.holdsCount;
+			console.log("sendingMessage: "+itemURL);
+			//need to comply with CORBS https://www.chromestatus.com/feature/5629709824032768
+			chrome.runtime.sendMessage(
+				{type: "_libraryStatus", url: itemURL, libraryShortName: library.libraryShortName},
+				function(responseObj) {
+					//console.log(responseObj);
+					//update resultsPane with availability information
+					var availString = "";
+					if (responseObj.isAvailable) {
+						availString = "<b><a target='_blank' href='" + responseObj.url + "'>" + responseObj.libraryShortName + "</a>: <a target='_blank' href='" + responseObj.url + "' style='color:#73CEE1'>Available to borrow!</a></b><br>";
+					} else {
+						if (responseObj.libCopies > 0) {
+							availString = "<b><a target='_blank' href='" + responseObj.url + "'>" + responseObj.libraryShortName + "</a>:</b> " + responseObj.numHolds + " hold" + (responseObj.numHolds == 1 ? "" : "s") + " on " + responseObj.libCopies + " cop" + (responseObj.libCopies == 1 ? "y" : "ies") + "(" + Math.round(responseObj.numHolds/responseObj.libCopies) + " per)<br>";
+						} else {
+							availString = "<b><a target='_blank' href='" + responseObj.url + "'>" + responseObj.libraryShortName + "</a>:</b> No copies owned<br>";
 						}
 					}
+					//console.log(availString);
+					$('#MLSresults').append(availString);
+					fullsize = $('#resultsPane').outerHeight();
+					//console.log("fullsize: "+fullsize);
 				}
-				console.log ("isAvailable: "+isAvailable+" libCopies: "+libCopies+" numHolds: "+numHolds+" numAvailable: "+numAvailable)
-				//update resultsPane with availability information
-				var availString = "";
-				if (isAvailable) {
-					availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>: <a target='_blank' href='" + this.url + "' style='color:#73CEE1'>Available to borrow!</a></b><br>";
-				} else {
-					if (libCopies > 0) {
-						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> " + numHolds + " hold" + (numHolds == 1 ? "" : "s") + " on " + libCopies + " cop" + (libCopies == 1 ? "y" : "ies") + "(" + Math.round(numHolds/libCopies) + " per)<br>";
-					} else {
-						availString = "<b><a target='_blank' href='" + this.url + "'>" + this.libraryShortName + "</a>:</b> No copies owned<br>";
-					}
-				}
-				//console.log(availString);
-				$('#MLSresults').append(availString);
-				fullsize = $('#resultsPane').outerHeight();
-				//console.log("fullsize: "+fullsize);
-		  });
+			);
 	  }
 	} //end libraries array for loop
 	//if no valid libraries, display noLibrariesMsg if not displayed already

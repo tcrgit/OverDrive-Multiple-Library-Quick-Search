@@ -29,6 +29,9 @@ $(document).ready(function() {
     // if (r == true)
     $('#setupStatusBar').text("").hide();
     $('#menuStatusBar').text("").hide();
+    $('#menu').html('');
+    $('#setup').show();
+    $('#normal').hide();
     findLibraries();
   });
 
@@ -122,7 +125,7 @@ function foundSavedLibraries(message) {
         $('#menu').html(''); newLibraryIndex = 0; onNoLibraries = 5; loadLibraries();
         break;
     }
-    console.log("foundSavedLibraries removed");
+    console.log("foundSavedLibraries listener removed");
     chrome.webRequest.onCompleted.removeListener(foundSavedLibraries);
   }
 }
@@ -214,6 +217,7 @@ function setupDone(){
   console.log("setup done", libraries);
   $('#menu').html('');
   chrome.storage.sync.set({"libraries": libraries}, function() { onNoLibraries = 4; loadLibraries(); });
+  $('#normal').show();
 };
 
 function loadLibraries() {

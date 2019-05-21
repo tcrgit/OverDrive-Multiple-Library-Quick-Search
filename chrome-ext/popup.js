@@ -6,7 +6,7 @@ function submitq() {
     var bookFormat = '', debug = false;
     var URLbase = 'https://www.overdrive.com/search?q=';
     var q = encodeURIComponent(response);
-    var localLibs = '&autoLibrary=f&autoRegion=t';
+    var localLibs = '&autoLibrary=t&autoRegion=t';
 
     if (document.getElementById("eBookOnly").checked) {bookFormat = '&f-formatClassification=eBook';}
     if (document.getElementById("AudiobookOnly").checked) {bookFormat = '&f-formatClassification=Audiobook';}

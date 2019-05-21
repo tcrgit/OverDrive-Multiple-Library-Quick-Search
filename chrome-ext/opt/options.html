@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>Multiple Library Quick Search Options</title>
+	<title>Options: Multiple Library Quick Search</title>
   <style>
     body {font-size:100%; max-width: 710px; margin: auto;}
 		#container {margin: 10px;}
@@ -14,7 +14,7 @@
 		.ip1 {min-width:150px;}
 		.badURL {background-color: #FFE4E1;}
 		.hidden {display:none;}
-		#spinner {text-align:center;position:fixed;left:100px;top:190px;width:400px;z-index:100;margin:0px;display:none;}
+		#spinner {text-align:center;z-index:100;position:fixed;top:190px;width:410px;margin:auto 150px;display:none;}
 		#spinner div {padding:10px;border:3px solid blue;border-radius:5px;background-color:#F5F5F5;}
   </style>
   <script type="text/javascript" src="../jquery-3.2.0.min.js"></script>
@@ -56,7 +56,7 @@
 			and which libraries might not even own the book. One click takes you directly to a library to borrow it,
 			or click elsewhere on the box to shrink or expand it to read the page beneath it.</p>
 		<p><img src="MLSresults.png" style="float:left; width:300px; margin-right:7px; vertical-align:bottom">
-			This extension also adds a popup button to your chrome toolbar. Use it to quickly search all of your 
+			This extension also adds a popup button to your chrome toolbar. Use it to quickly search all of your
 			OverDrive libraries at once for an ebook or audiobook that you wish to check out.</p>
 	</div></div>
 
@@ -100,6 +100,7 @@
 	<button id="btnCancelSetup" style="font-size: 10px;float:right">Cancel Setup</button>
 	<span id="spinnerP">Working...</span>
 </div></div>
+
 <iframe id="iframeOpt" style="display:none"></iframe>
 </body>
 </html>
