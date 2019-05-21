@@ -23,9 +23,9 @@ Use the extension's options page to setup a list of libraries to search. If you 
 
 ## Version history
 
-2.4 Fix to work with Chrome CORS security & options page fixes (21 May 2019)
-2.3 Setup enhancements, fix for basic functionality when not logged in (12 Feb 2018)
-2.2 Support for libraryreserve.com (22 April 2017)
-2.0 Updated to inject multiple library results (10 April 2017)
-1.0 Basic browser Extension (28 March 2017)
-alpha Released as simple webform (13 March 2017)
+* 2.4 Fix to work with Chrome CORS security & options page fixes (21 May 2019)
+* 2.3 Setup enhancements, fix for basic functionality when not logged in (12 Feb 2018)
+* 2.2 Support for libraryreserve.com (22 April 2017)
+* 2.0 Updated to inject multiple library results (10 April 2017)
+* 1.0 Basic browser Extension (28 March 2017)
+* alpha Released as simple webform (13 March 2017)
