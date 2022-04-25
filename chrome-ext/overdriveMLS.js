@@ -10,19 +10,33 @@ var noLibrariesMsg = "<div id='noLibraries'>No OverDrive libraries found. Please
 $(document).ready(function() {
 	console.log("overdriveMLS document ready");
 
+/* 
+	in Opera possibly European cookie problem), there is no dataLayer global var
+	everywhere else  there is. Might be related to that or opera or another extension!
+	In opera and in Chrome (but not firefox) there is a window.OverDrive.isLoggedIn variable... and some related others.
+	//if (window.OverDrive.isLoggedIn === undefined) { console.log('old datalayer method'); }
+
+*/
 	//get overdrive datalayer
-	var varList = retrieveWindowVariables(["dataLayer"]);  //js var inaccessible due to sandboxing of extension, trick
+	var varList = retrieveWindowVariables( ["dataLayer"] );  //js var inaccessible due to sandboxing of extension, trick
+	//console.log(varList);
+	//console.log(varList.dataLayer);
+    //console.log(varList.OverDrive);
 	ODdataLayer = JSON.parse(varList.dataLayer)[0];
-	//console.log(ODdataLayer);
+	if (ODdataLayer === undefined) { console.log('new datalayer method'); }
+
+	console.log(ODdataLayer);
 
 	//determine if this is a search page and set positions, variables for injection
-	var searchPage=false; var resultsPaneRight="30px"; resultsPaneTop="90px"; resultsPaneSearchNote = "";
+	var searchPage=false, resultsPaneSearchNote = "", resultsPaneRight = "100px", resultsPaneTop = "110px";
 	if (document.URL.includes("overdrive.com/search")) {
 		searchPage = true;
-		resultsPaneRight = "400px";
-		resultsPaneTop = "60px";
 		resultsPaneSearchNote = '<br><span id="searchBookTitle">for the first book on left</span>';
+		resultsPaneTop = "110px"; resultsPaneRight = "100px";
 	};
+	//try to get formatting values from header and div.mainNav if they exist
+	if ( $('header').length > 0  ) { resultsPaneTop = $('header').height() + 1 + "px";  }
+	if ( $('div.mainNav').length > 0  ) { resultsPaneRight = ( window.innerWidth - $('div.mainNav').width() ) / 2 + 12 + "px"; }
 
 	//inject media results pane for MLS info -- use inline element styles to format on injection
 	$('body').append('<div id="resultsPane" style="font-size: 17px; position:fixed; top:' + resultsPaneTop + '; right:' + resultsPaneRight + '; min-height:35px; width:350px; padding:3px 10px 5px 10px; border:black 2px solid; border-radius:5px; background:white; z-index:3; font-family: LinetoBrown, Helvetica Neue, Helvetica, Arial, Verdana, sans-serif; overflow:hidden;"><p id="MLSresultsTitle" style="text-align:center;"><b>Multiple Library Search Results</b>'+resultsPaneSearchNote+'</p><div id="MLSresults"></div></div>');
@@ -207,47 +221,30 @@ port.onMessage.addListener(message => {
 			//get overdrive datalayer
 			var varList = retrieveWindowVariables(["dataLayer"]);  //js var inaccessible due to sandboxing of extension, trick
 			ODdataLayer = JSON.parse(varList.dataLayer)[0];
-			//console.log(ODdataLayer);
+			console.log(ODdataLayer);
 			if (isLoggedIn(ODdataLayer)) {
+				//OD changed the format of the page...
+				//give page 3 seconds to load
 				setTimeout(function(){
 					var newLibraries=[];
-	     		firstLibraryName = $('span.btn__sub-label:first').text().trim().replace(/^at /m,'');
-					//console.log('firstLibraryName: '+firstLibraryName);
-					//if no libraries...
-					if (firstLibraryName == "in your library") {
-						status = "No saved libraries";
-					} else {
-						status = "Success";
-						//collect list of libraries
-						//if more than 1 library h3 tag will read Other saved libraries
-						if ( $('div.acquirebar-btns h3').text().indexOf("Other saved libraries") > -1) {
-							libraryTags = $('div.acquirebar-btns a');
-							libraryTags.each(function(i,e){
-								//fix first with narrower, trimmed, & replaced string
-								libraryFullName=$(e).text().trim(); if (i==0) {libraryFullName = firstLibraryName;}
-								//console.log("i=" + i  + " " + libraryFullName) + " " , $(e).attr('href');
-								//skip last (find in all libraries)
-								if (i < libraryTags.length-1){
-									newLibraries.push({
-										"libraryShortName": libraryFullName.firstWord(),
-										"libraryURL": $(e).attr('href').replace(/https?:\/\//i,'').replace(/\/Content.*/,''),
-										"libraryFullName": libraryFullName
-									});
-								}
-							});
-						} else {
-							firstLibraryURL = $('div.acquirebar-btns a:first').attr('href');
-							console.log("first URL, 1 library only",firstLibraryURL);
+					//if saved libraries
+					if ( $('div.saved-libraries-header').length > 0 ) {
+						$('a.btn').each(function(){
+							console.log($(this).data("name"), $(this).attr("href"));
+							libraryFullName = $(this).data("name").trim();
 							newLibraries.push({
-								"libraryShortName": firstLibraryName.firstWord(),
-								"libraryURL": firstLibraryURL.replace(/https?:\/\//i,'').replace(/\/Content.*/,''),
-								"libraryFullName": firstLibraryName
+								"libraryShortName": libraryFullName.firstWord(),
+								"libraryURL": $(this).attr('href').replace(/https?:\/\//i,'').replace(/\/Content.*/,''),
+								"libraryFullName": libraryFullName
 							});
-						}
+						});
+						libStatus = "Success";						
+					} else {
+						libStatus = "No saved libraries";
 					}
 					chrome.runtime.sendMessage({
 						type: "_foundSavedLibraries",
-						status: status,
+						status: libStatus,
 						response: {newLibraries}
 					});
 				},3000); //wait before trying to get names & urls and send it back

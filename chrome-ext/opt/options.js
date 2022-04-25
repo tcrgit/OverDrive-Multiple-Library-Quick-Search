@@ -13,7 +13,7 @@ $(document).ready(function() {
   });
 
   $('#btnSetup').click(function() {
-    //TODO disable button on click, re-enable when done
+    //TODO: disable button on click, re-enable when done
     $('btnSetup').prop('disabled', true);
     $('#setupStatusBar').text("").hide();
     $('#menuStatusBar').text("").hide();
@@ -21,7 +21,7 @@ $(document).ready(function() {
   });
 
   $('#btnClearAndSetup').click(function() {
-    //TODO disable button on click, re-enable when done
+    //TODO: disable button on click, re-enable when done
     $('btnClearAndSetup').prop('disabled', true);
     // Warn of serious nature and get confirmation to proceed
     // TODO: s/b modal, confirm won't work in chrome
@@ -94,7 +94,7 @@ function foundSavedLibraries(message) {
             },3000);
             $('#iframeOpt').attr('src', "http://"+library.libraryURL);
           } else {
-            //TODO note URL could be empty--just leave it as is for now
+            //TODO: note URL could be empty--just leave it as is for now
             console.log("A valid libraryURL found: ", library.libraryURL);
             newLibraryIndex++;
           }
@@ -172,7 +172,7 @@ function runWhenLoaded(iframeInfo) {
       //load tab in the iframe (uses bg.js webrequest listener to block x-frame-options header)
       $('#iframeOpt').attr('src', "http://"+library.libraryURL);
     } else {
-      //TODO note URL could be empty--just leave it as is for now
+      //TODO: note URL could be empty--just leave it as is for now
       //valid libraryURL is already in libraries array
       //console.log(" Valid libraryURL found: ", library.libraryURL);
       timer = setTimeout(function(){
