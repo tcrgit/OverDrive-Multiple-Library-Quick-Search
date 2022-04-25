@@ -7,7 +7,7 @@ You have the option of showing only eBooks or Audiobooks. To cut down on useless
 
 This tool's correct operation depends on the stability of OverDrive's URL schema, changes to which are out of the control of the author. Consequently, this search may break at any time.
 
-Tested: 21 May 2019
+Tested: 25 Apr 2022
 
 ## Browser extension details
 
